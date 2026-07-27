@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Adaptivity Customer Portal",
+    "slug": "adaptivity-customer-app",
+    "owner": "adaptivityperformance",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#090a0f"
+    },
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "icon": "./assets/icon.png",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.adaptivityperformance.customer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Adaptivity uses your camera to scan vehicle VIN stickers and document vehicle issues for quote requests.",
+        "NSLocationWhenInUseUsageDescription": "Adaptivity uses your location to auto-fill your mobile service dispatch address.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#090a0f"
+      },
+      "package": "com.adaptivityperformance.customer"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "01d1a910-9eff-4be0-b7ff-72dcf02c2e89"
+      }
+    },
+    "plugins": [
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.adaptivityperformance.customer",
+          "enableGooglePay": true
+        }
+      ]
+    ]
+  }
+}
