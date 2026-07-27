@@ -143,6 +143,18 @@ export default function App() {
     return <AuthScreen onLogin={handleLogin} />;
   }
 
+  if (!STRIPE_PUBLISHABLE_KEY.startsWith('pk_')) {
+    return (
+      <SafeAreaView style={[styles.container, styles.boot]}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.bg.primary} />
+        <Text style={{ color: colors.text.primary, padding: 24, textAlign: 'center' }}>
+          Missing EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY. Sync from adaptivity-performance with
+          scripts/sync-expo-env.mjs, then restart Expo.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <SafeAreaView style={styles.container}>

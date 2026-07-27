@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Modal, Switch,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/colors';
+import { supabase } from '../lib/supabase';
 
 interface SettingsScreenProps {
   customerName: string;
@@ -37,7 +38,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     Alert.alert('Profile Updated', 'Your customer account details have been saved.');
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Missing Fields', 'Please complete all password fields.');
       return;
@@ -51,11 +52,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       return;
     }
 
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: customerEmail,
+      password: currentPassword,
+    });
+    if (reauthError) {
+      Alert.alert('Incorrect Password', 'Your current password is not correct.');
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      Alert.alert('Update Failed', updateError.message);
+      return;
+    }
+
     setShowPasswordModal(false);
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    Alert.alert('Password Changed!', 'Your password has been successfully updated.');
+    Alert.alert('Password Changed', 'Your password has been updated.');
   };
 
   return (
@@ -246,7 +261,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               placeholderTextColor={colors.text.muted}
             />
 
-            <TouchableOpacity style={styles.savePasswordBtn} onPress={handleChangePassword}>
+            <TouchableOpacity style={styles.savePasswordBtn} onPress={() => void handleChangePassword()}>
               <Text style={styles.savePasswordText}>🔒 Update Password</Text>
             </TouchableOpacity>
           </View>
