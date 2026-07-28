@@ -133,7 +133,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                 <Text style={styles.inputLabel}>Full Name</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Marcus Vance"
+                  placeholder="Your full name"
                   placeholderTextColor={colors.text.muted}
                   value={fullName}
                   onChangeText={setFullName}
@@ -142,7 +142,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                 <Text style={styles.inputLabel}>Phone Number</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="(555) 019-2831"
+                  placeholder="(214) 555-0100"
                   placeholderTextColor={colors.text.muted}
                   value={phone}
                   onChangeText={setPhone}
@@ -155,7 +155,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             <Text style={styles.inputLabel}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="customer@example.com"
+              placeholder="you@email.com"
               placeholderTextColor={colors.text.muted}
               value={email}
               onChangeText={setEmail}
@@ -198,13 +198,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Demo Hint */}
-          <View style={styles.demoBanner}>
-            <Text style={styles.demoBannerTitle}>💡 Instant Demo Access</Text>
-            <Text style={styles.demoBannerText}>
-              Any email and password combination will grant instant access in demo mode.
-            </Text>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -387,27 +380,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '800',
-  },
-  demoBanner: {
-    marginTop: spacing.xl,
-    padding: spacing.md,
-    backgroundColor: 'rgba(249, 115, 22, 0.08)',
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border.orange,
-    width: '100%',
-    alignItems: 'center',
-  },
-  demoBannerTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.brand.orange,
-    marginBottom: 2,
-  },
-  demoBannerText: {
-    fontSize: 11,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,

@@ -31,8 +31,8 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
     selectedVehicleId || (vehicles[0]?.id || '')
   );
   const [selectedServices, setSelectedServices] = useState<string[]>(['diagnostic']);
-  const [dispatchAddress, setDispatchAddress] = useState('1042 Motorsport Blvd, Austin, TX 78701');
-  const [selectedDate, setSelectedDate] = useState('Tomorrow, July 27');
+  const [dispatchAddress, setDispatchAddress] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('10:30 AM');
   const [notes, setNotes] = useState('');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -258,7 +258,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
           <Text style={[styles.quoteLabel, { marginBottom: spacing.sm, lineHeight: 18 }]}>
             {quote.explanation}
             {selectedServicesList.some((s) => s.directBook)
-              ? ' (*Direct services listed for the visit; hold stays at diagnostic until repairs are approved.)'
+              ? ' (*Service menu items — final labor + parts are set by your tech on site.)'
               : ''}
           </Text>
         )}

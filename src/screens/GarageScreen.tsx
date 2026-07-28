@@ -256,7 +256,7 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
               <Text style={styles.inputLabel}>Make *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Porsche, BMW, Audi, Corvette..."
+                placeholder="Make (e.g. Ford)"
                 placeholderTextColor={colors.text.muted}
                 value={make}
                 onChangeText={setMake}
@@ -265,7 +265,7 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
               <Text style={styles.inputLabel}>Model *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="911, M3, RS6, Z06..."
+                placeholder="Model (e.g. F-150)"
                 placeholderTextColor={colors.text.muted}
                 value={model}
                 onChangeText={setModel}
