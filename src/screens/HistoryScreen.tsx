@@ -31,7 +31,7 @@ function mapBooking(row: Record<string, unknown>): ServiceHistoryItem {
     date: new Date(row.created_at as string).toLocaleDateString(),
     vehicleName: (row.vehicle_description as string) || 'Vehicle',
     services,
-    totalCost: captured ?? Number(row.total_estimate) || 0,
+    totalCost: captured ?? (Number(row.total_estimate) || 0),
     status: (row.status as string) || 'unknown',
     receiptId: (row.reference_code as string) || '—',
     paymentStatus: (row.payment_status as string) || 'none',

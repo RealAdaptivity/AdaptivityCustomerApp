@@ -24,6 +24,11 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELED: 'Booking canceled',
 };
 
+function dollars(cents: number | null | undefined) {
+  if (cents == null) return '—';
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 export const TrackJobScreen: React.FC = () => {
   const [reference, setReference] = useState('');
   const [trackedRef, setTrackedRef] = useState<string | null>(null);
@@ -80,7 +85,10 @@ export const TrackJobScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Track your repair</Text>
-      <Text style={styles.subtitle}>Enter the job reference from your booking confirmation (e.g. AP-8492).</Text>
+      <Text style={styles.subtitle}>
+        Enter the job reference from your booking confirmation. Your tech diagnoses on site and sets labor +
+        parts pricing before charging your card on file.
+      </Text>
 
       <TextInput
         style={styles.input}
@@ -109,7 +117,37 @@ export const TrackJobScreen: React.FC = () => {
               ETA ~{booking.etaMinutes} min · {booking.distanceMiles.toFixed(1)} mi
             </Text>
           )}
-          <Text style={styles.pay}>Payment: {booking.paymentStatus}</Text>
+          <Text style={styles.pay}>Payment: {booking.paymentStatus.replace(/_/g, ' ')}</Text>
+
+          {(booking.quoteStatus === 'awaiting_diagnostic' || booking.status === 'ON_SITE') &&
+            booking.paymentStatus !== 'captured' && (
+              <Text style={styles.diag}>
+                Tech is diagnosing on site and will agree labor + parts with you before charging.
+              </Text>
+            )}
+
+          {booking.quoteLineItems.length > 0 && booking.paymentStatus === 'captured' && (
+            <View style={styles.quoteBox}>
+              <Text style={styles.quoteTitle}>Receipt</Text>
+              {booking.quoteLineItems.map((item, i) => (
+                <View key={i} style={styles.quoteRow}>
+                  <Text style={styles.line}>{item.title}</Text>
+                  <Text style={styles.quoteAmt}>
+                    {dollars((item.labor_cents || 0) + (item.parts_cents || 0))}
+                  </Text>
+                </View>
+              ))}
+              <Text style={styles.total}>Total: {dollars(booking.quoteTotalCents)}</Text>
+            </View>
+          )}
+
+          {booking.quoteStatus === 'quote_approved' && (
+            <Text style={styles.diag}>Payment captured. Thanks!</Text>
+          )}
+          {booking.quoteStatus === 'quote_declined' && (
+            <Text style={styles.lineMuted}>Diagnostic visit only — $100 applied.</Text>
+          )}
+
           <TouchableOpacity onPress={openMaps}>
             <Text style={styles.link}>Open service address in Maps</Text>
           </TouchableOpacity>
@@ -136,31 +174,50 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     padding: spacing.md,
     color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'monospace',
   },
   primaryBtn: {
     marginTop: spacing.sm,
     backgroundColor: colors.brand.orange,
-    paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   primaryBtnText: { color: '#fff', fontWeight: '800' },
-  error: { color: '#f87171', marginTop: spacing.md, fontSize: 13 },
+  error: { color: colors.status.error, marginTop: spacing.sm, fontSize: 12 },
   card: {
     marginTop: spacing.lg,
     backgroundColor: colors.bg.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border.primary,
+    padding: spacing.md,
+    gap: 6,
   },
-  ref: { color: colors.brand.orange, fontWeight: '900', fontSize: 18 },
-  status: { color: colors.text.primary, fontWeight: '800', fontSize: 16, marginTop: 8 },
-  line: { color: colors.text.secondary, marginTop: 8 },
-  lineMuted: { color: colors.text.muted, fontSize: 12, marginTop: 4 },
-  eta: { color: colors.text.secondary, marginTop: 8, fontWeight: '600' },
-  pay: { color: colors.text.muted, fontSize: 11, marginTop: 8 },
-  link: { color: colors.brand.orange, marginTop: 10, fontWeight: '700', fontSize: 13 },
+  ref: { color: colors.brand.orange, fontFamily: 'monospace', fontWeight: '800' },
+  status: { color: colors.text.primary, fontWeight: '800', fontSize: 16 },
+  line: { color: colors.text.secondary, fontSize: 13 },
+  lineMuted: { color: colors.text.muted, fontSize: 12 },
+  eta: { color: colors.status.success, fontSize: 12, marginTop: 4 },
+  pay: { color: colors.text.muted, fontSize: 12, marginTop: 4 },
+  diag: { color: '#7dd3fc', fontSize: 12, marginTop: 8, lineHeight: 18 },
+  quoteBox: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    backgroundColor: colors.bg.input,
+  },
+  quoteTitle: {
+    color: colors.text.primary,
+    fontWeight: '800',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  quoteRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  quoteAmt: { color: colors.text.primary, fontWeight: '700', marginTop: 8 },
+  total: { color: colors.text.primary, fontWeight: '900', marginTop: 8 },
+  link: { color: colors.brand.orange, marginTop: 10, fontSize: 12, textDecorationLine: 'underline' },
 });

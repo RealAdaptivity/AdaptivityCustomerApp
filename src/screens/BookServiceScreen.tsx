@@ -7,64 +7,10 @@ import { colors, spacing, borderRadius } from '../theme/colors';
 import { Vehicle } from './GarageScreen';
 import { supabase } from '../lib/supabase';
 import { createBookingWithCardHold } from '../lib/bookingPayments';
+import { SERVICE_CATALOG } from '../lib/serviceCatalog';
+import { computeHoldQuote } from '../lib/holdPricing';
 
-interface ServiceOption {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  duration: string;
-  icon: string;
-  category: 'maintenance' | 'brakes' | 'performance' | 'inspection';
-}
-
-const SERVICES: ServiceOption[] = [
-  {
-    id: 's1',
-    title: 'Full Synthetic Mobile Oil Service',
-    description: 'Liqui Moly / Motul Euro Synthetic Oil + OEM Filter Replacement + 21-Point Mobile Check.',
-    price: 149,
-    duration: '45 mins',
-    icon: '🛢️',
-    category: 'maintenance',
-  },
-  {
-    id: 's2',
-    title: 'Performance Ceramic Brake Service',
-    description: 'Front or Rear Brembo / Hawk Ceramic Pads + Rotor inspection & Hardware Lube.',
-    price: 349,
-    duration: '90 mins',
-    icon: '🛑',
-    category: 'brakes',
-  },
-  {
-    id: 's3',
-    title: 'Adaptivity Stage 1 ECU Tune',
-    description: 'Custom Mobile Dyno-Calibrated ECU Remap (+35-60 HP increase & throttle map fix).',
-    price: 599,
-    duration: '60 mins',
-    icon: '⚡',
-    category: 'performance',
-  },
-  {
-    id: 's4',
-    title: 'Full Mobile Digital Inspection (DVI)',
-    description: 'HD Engine Bay Scan, OBD2 Diagnostic Log, Fluid Moisture Test & Digital Report.',
-    price: 89,
-    duration: '30 mins',
-    icon: '🔍',
-    category: 'inspection',
-  },
-  {
-    id: 's5',
-    title: 'AGM Battery & Charging Diagnostics',
-    description: 'Mobile Interstate AGM Battery Replacement + ECU Battery Registration Code.',
-    price: 269,
-    duration: '40 mins',
-    icon: '🔋',
-    category: 'maintenance',
-  },
-];
+const SERVICES = SERVICE_CATALOG;
 
 const TIME_SLOTS = [
   '08:00 AM', '10:30 AM', '01:00 PM', '03:30 PM', '05:30 PM',
@@ -84,7 +30,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
   const [activeVehicleId, setActiveVehicleId] = useState<string>(
     selectedVehicleId || (vehicles[0]?.id || '')
   );
-  const [selectedServices, setSelectedServices] = useState<string[]>(['s1']);
+  const [selectedServices, setSelectedServices] = useState<string[]>(['diagnostic']);
   const [dispatchAddress, setDispatchAddress] = useState('1042 Motorsport Blvd, Austin, TX 78701');
   const [selectedDate, setSelectedDate] = useState('Tomorrow, July 27');
   const [selectedTime, setSelectedTime] = useState('10:30 AM');
@@ -98,16 +44,18 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
   const activeVehicle = vehicles.find(v => v.id === activeVehicleId) || vehicles[0];
 
   const toggleService = (id: string) => {
-    setSelectedServices(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setSelectedServices((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((item) => item !== id);
+        return next.length ? next : ['diagnostic'];
+      }
+      return [...prev, id];
+    });
   };
 
-  const selectedServicesList = SERVICES.filter(s => selectedServices.includes(s.id));
-  const subtotal = selectedServicesList.reduce((acc, s) => acc + s.price, 0);
-  const dispatchFee = 25; // Mobile dispatch fee
-  const tax = Math.round(subtotal * 0.0825);
-  const grandTotal = subtotal + dispatchFee + tax;
+  const selectedServicesList = SERVICES.filter((s) => selectedServices.includes(s.id));
+  const quote = computeHoldQuote(selectedServices);
+  const grandTotal = quote.holdDollars;
 
   const handleConfirmBooking = async () => {
     if (selectedServices.length === 0) {
@@ -180,7 +128,8 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       {/* Header */}
       <Text style={styles.screenTitle}>⚡ Instant Quote & Dispatch</Text>
       <Text style={styles.screenSubtitle}>
-        Schedule an ASE-Certified Mobile Technician direct to your home or office.
+        Most visits start with a $100 diagnostic — then we recommend repairs. Oil, brakes,
+        transmission fluid, and differential service book directly (no diagnostic fee).
       </Text>
 
       {/* Step 1: Select Vehicle */}
@@ -223,10 +172,15 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
                 <Text style={styles.serviceIcon}>{s.icon}</Text>
                 <Text style={styles.serviceTitle}>{s.title}</Text>
               </View>
-              <Text style={styles.servicePrice}>${s.price}</Text>
+              <Text style={styles.servicePrice}>
+                {s.directBook ? `$${s.price}` : '$100'}
+              </Text>
             </View>
 
-            <Text style={styles.serviceDescription}>{s.description}</Text>
+            <Text style={styles.serviceDescription}>
+              {s.directBook ? 'DIRECT BOOK · ' : 'DIAGNOSTIC PATH · '}
+              {s.description}
+            </Text>
 
             <View style={styles.serviceFooter}>
               <Text style={styles.serviceDuration}>⏱️ Est. {s.duration}</Text>
@@ -289,33 +243,36 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       </View>
 
       {/* Step 4: Quote Summary */}
-      <Text style={styles.sectionHeader}>4. INSTANT QUOTE BREAKDOWN</Text>
+      <Text style={styles.sectionHeader}>4. CARD HOLD BREAKDOWN</Text>
       <View style={styles.quoteCard}>
-        {selectedServicesList.map(s => (
+        {selectedServicesList.map((s) => (
           <View key={s.id} style={styles.quoteRow}>
             <Text style={styles.quoteLabel}>{s.title}</Text>
-            <Text style={styles.quoteVal}>${s.price}.00</Text>
+            <Text style={styles.quoteVal}>
+              {quote.mode === 'direct' ? `$${s.price}` : s.directBook ? `$${s.price}*` : '$100'}
+            </Text>
           </View>
         ))}
 
-        <View style={styles.quoteRow}>
-          <Text style={styles.quoteLabel}>Mobile Van Service & Travel Fee</Text>
-          <Text style={styles.quoteVal}>${dispatchFee}.00</Text>
-        </View>
-
-        <View style={styles.quoteRow}>
-          <Text style={styles.quoteLabel}>Estimated Sales Tax (8.25%)</Text>
-          <Text style={styles.quoteVal}>${tax}.00</Text>
-        </View>
+        {quote.mode === 'diagnostic' && (
+          <Text style={[styles.quoteLabel, { marginBottom: spacing.sm, lineHeight: 18 }]}>
+            {quote.explanation}
+            {selectedServicesList.some((s) => s.directBook)
+              ? ' (*Direct services listed for the visit; hold stays at diagnostic until repairs are approved.)'
+              : ''}
+          </Text>
+        )}
 
         <View style={styles.divider} />
 
         <View style={styles.totalRow}>
-          <View>
-            <Text style={styles.totalTitle}>ESTIMATED TOTAL</Text>
-            <Text style={styles.totalSubtitle}>Card hold for diagnostic — charged when job completes</Text>
+          <View style={{ flex: 1, paddingRight: 8 }}>
+            <Text style={styles.totalTitle}>
+              {quote.mode === 'direct' ? 'SERVICE HOLD' : 'DIAGNOSTIC HOLD'}
+            </Text>
+            <Text style={styles.totalSubtitle}>{quote.explanation}</Text>
           </View>
-          <Text style={styles.totalAmount}>${grandTotal}.00</Text>
+          <Text style={styles.totalAmount}>${grandTotal}</Text>
         </View>
 
         <TouchableOpacity
@@ -342,8 +299,11 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
             <Text style={styles.modalSuccessTitle}>Mobile Service Booked!</Text>
             <Text style={styles.modalSuccessText}>
               Your card is on file and we placed a hold of{' '}
-              <Text style={{ color: colors.brand.orange, fontWeight: '800' }}>${grandTotal}</Text>{' '}
-              for your diagnostic visit. You will be charged when the job is completed. Appointment:{' '}
+              <Text style={{ color: colors.brand.orange, fontWeight: '800' }}>${grandTotal}</Text>
+              {quote.mode === 'diagnostic'
+                ? '. After the diagnostic we will recommend any repairs before additional charges.'
+                : ' for your direct-book service.'}{' '}
+              You are charged when the job is completed. Appointment:{' '}
               <Text style={{ color: colors.brand.orange, fontWeight: '800' }}>
                 {selectedDate} at {selectedTime}
               </Text>
