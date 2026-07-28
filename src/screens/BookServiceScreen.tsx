@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { createBookingWithCardHold } from '../lib/bookingPayments';
 import { SERVICE_CATALOG } from '../lib/serviceCatalog';
 import { computeHoldQuote } from '../lib/holdPricing';
+import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../lib/contractorLiability';
 
 const SERVICES = SERVICE_CATALOG;
 
@@ -274,6 +275,10 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
           </View>
           <Text style={styles.totalAmount}>${grandTotal}</Text>
         </View>
+
+        <Text style={[styles.quoteLabel, { marginTop: spacing.sm, lineHeight: 18 }]}>
+          {CUSTOMER_TECH_LIABILITY_NOTICE}
+        </Text>
 
         <TouchableOpacity
           style={[styles.confirmBookingBtn, isSubmitting && styles.confirmBookingBtnDisabled]}
