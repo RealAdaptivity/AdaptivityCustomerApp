@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Modal, Switch,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+  Modal,
+  Switch,
+  Share,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { supabase } from '../lib/supabase';
+import { ensureReferralCode, getCreditBalance } from '../lib/referrals';
 
 interface SettingsScreenProps {
   customerName: string;
@@ -32,6 +42,26 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [smsAlerts, setSmsAlerts] = useState(true);
   const [emailReceipts, setEmailReceipts] = useState(true);
   const [serviceReminders, setServiceReminders] = useState(true);
+
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [creditCents, setCreditCents] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [code, balance] = await Promise.all([ensureReferralCode(), getCreditBalance()]);
+        if (cancelled) return;
+        setReferralCode(code);
+        setCreditCents(balance);
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSaveProfile = () => {
     onUpdateProfile(name, email);
@@ -120,6 +150,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <TouchableOpacity style={styles.saveProfileBtn} onPress={handleSaveProfile}>
           <Text style={styles.saveProfileText}>💾 Save Profile Changes</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Referral */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardEmoji}>🎁</Text>
+          <Text style={styles.cardTitle}>Refer a friend — $25 / $25</Text>
+        </View>
+        <Text style={styles.switchSub}>
+          Share your code. When a friend books with it, you both earn $25 credit after their completed job.
+        </Text>
+        {referralCode ? (
+          <>
+            <Text style={styles.referralCode}>{referralCode}</Text>
+            <Text style={styles.creditBalance}>
+              Credit balance: ${(creditCents / 100).toFixed(2)}
+            </Text>
+            <TouchableOpacity
+              style={styles.shareReferralBtn}
+              onPress={() => {
+                void Share.share({
+                  message: `Use my Adaptivity referral code ${referralCode} — we both get $25 credit. https://adaptivityperformance.com`,
+                });
+              }}
+            >
+              <Text style={styles.shareReferralText}>Share code</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={styles.switchSub}>Loading referral code…</Text>
+        )}
       </View>
 
       {/* Security & Password Card */}
@@ -306,6 +367,24 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   saveProfileText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  referralCode: {
+    marginTop: spacing.md,
+    fontSize: 22,
+    fontWeight: '900',
+    color: colors.brand.orange,
+    letterSpacing: 2,
+    fontFamily: 'monospace',
+  },
+  creditBalance: { marginTop: 6, fontSize: 13, fontWeight: '700', color: colors.status.success },
+  shareReferralBtn: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.brand.orange,
+    borderRadius: borderRadius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  shareReferralText: { color: colors.brand.orange, fontWeight: '800', fontSize: 13 },
   securityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 },
   securityLabel: { fontSize: 13, fontWeight: '700', color: colors.text.primary },
   securitySub: { fontSize: 11, color: colors.text.muted },

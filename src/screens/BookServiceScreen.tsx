@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Modal, ActivityIndicator,
 } from 'react-native';
@@ -10,39 +10,78 @@ import { createBookingWithCardHold } from '../lib/bookingPayments';
 import { SERVICE_CATALOG } from '../lib/serviceCatalog';
 import { computeHoldQuote } from '../lib/holdPricing';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../lib/contractorLiability';
+import { fetchApprovedPartners, type PartnerLocation } from '../lib/partners';
+import { PREFERRED_TIME_SLOTS, PREFERRED_TIME_WINDOWS, todayISODate } from '../lib/scheduleWindows';
+import { applyReferralCodeOnBooking } from '../lib/referrals';
+import { getCatalogById, matchCatalogFromLabel } from '../lib/serviceCatalog';
+import { listFavoriteTechs } from '../lib/customerExtras';
 
 const SERVICES = SERVICE_CATALOG;
-
-const TIME_SLOTS = [
-  '08:00 AM', '10:30 AM', '01:00 PM', '03:30 PM', '05:30 PM',
-];
 
 interface BookServiceScreenProps {
   vehicles: Vehicle[];
   selectedVehicleId?: string;
+  prefillServices?: string[];
+  prefillVehicleName?: string;
   onBookingSuccess: () => void;
+}
+
+function catalogIdsFromTitles(titles: string[] | undefined): string[] {
+  if (!titles?.length) return ['diagnostic'];
+  const ids = titles
+    .map((t) => getCatalogById(t)?.id || matchCatalogFromLabel(t)?.id)
+    .filter((id): id is string => Boolean(id));
+  return ids.length ? [...new Set(ids)] : ['diagnostic'];
 }
 
 export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
   vehicles,
   selectedVehicleId,
+  prefillServices,
+  prefillVehicleName,
   onBookingSuccess,
 }) => {
+  const matchedVehicle = vehicles.find((v) => {
+    if (!prefillVehicleName) return false;
+    const label = `${v.year} ${v.make} ${v.model}`.toLowerCase();
+    return label === prefillVehicleName.toLowerCase();
+  });
   const [activeVehicleId, setActiveVehicleId] = useState<string>(
-    selectedVehicleId || (vehicles[0]?.id || '')
+    selectedVehicleId || matchedVehicle?.id || vehicles[0]?.id || ''
   );
-  const [selectedServices, setSelectedServices] = useState<string[]>(['diagnostic']);
+  const [selectedServices, setSelectedServices] = useState<string[]>(() =>
+    catalogIdsFromTitles(prefillServices)
+  );
+  const [locationMode, setLocationMode] = useState<'mobile' | 'shop'>('mobile');
+  const [partners, setPartners] = useState<PartnerLocation[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
   const [dispatchAddress, setDispatchAddress] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('10:30 AM');
+  const [selectedDate, setSelectedDate] = useState(todayISODate());
+  const [selectedTime, setSelectedTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [notes, setNotes] = useState('');
+  const [referralInput, setReferralInput] = useState('');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [dispatchReference, setDispatchReference] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [favorites, setFavorites] = useState<Array<{ techId: string; name: string }>>([]);
+  const [preferredMechanicId, setPreferredMechanicId] = useState<string | null>(null);
 
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const activeVehicle = vehicles.find(v => v.id === activeVehicleId) || vehicles[0];
+  const selectedPartner = partners.find((p) => p.id === selectedPartnerId) || partners[0] || null;
+
+  useEffect(() => {
+    void fetchApprovedPartners()
+      .then((rows) => {
+        setPartners(rows);
+        if (rows[0]) setSelectedPartnerId(rows[0].id);
+      })
+      .catch(() => setPartners([]));
+    void listFavoriteTechs()
+      .then((rows) => setFavorites(rows.map((r) => ({ techId: r.techId, name: r.name }))))
+      .catch(() => setFavorites([]));
+  }, []);
 
   const toggleService = (id: string) => {
     setSelectedServices((prev) => {
@@ -63,8 +102,12 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       Alert.alert('No Services Selected', 'Please select at least one service to request a quote or booking.');
       return;
     }
-    if (!dispatchAddress.trim()) {
+    if (locationMode === 'mobile' && !dispatchAddress.trim()) {
       Alert.alert('Missing Address', 'Please provide a mobile dispatch address.');
+      return;
+    }
+    if (locationMode === 'shop' && !selectedPartner) {
+      Alert.alert('Pick a shop', 'Select a partner shop or switch to mobile dispatch.');
       return;
     }
 
@@ -75,21 +118,34 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
         Alert.alert('Sign in required', 'Please sign in again to save your card and book.');
         return;
       }
-      const userId = sessionData.session.user.id;
       const userMeta = sessionData.session.user.user_metadata;
       const email = sessionData.session.user.email ?? undefined;
+
+      const address =
+        locationMode === 'shop' && selectedPartner
+          ? `${selectedPartner.businessName} — ${selectedPartner.address}${
+              selectedPartner.city ? `, ${selectedPartner.city}` : ''
+            }`
+          : dispatchAddress.trim();
 
       const hold = await createBookingWithCardHold({
         customerName: userMeta?.full_name || 'Adaptivity Customer',
         customerPhone: userMeta?.phone || '(214) 620-3244',
-        customerAddress: `${dispatchAddress.trim()} • ${selectedDate} ${selectedTime}`,
-        zipCode: '76247',
+        customerAddress: address,
+        zipCode: selectedPartner?.zipCode || '76247',
         vehicleDescription: activeVehicle
           ? `${activeVehicle.year} ${activeVehicle.make} ${activeVehicle.model}`
           : 'Customer vehicle',
         services: selectedServicesList.map(s => s.title),
         holdAmountDollars: grandTotal,
         customerEmail: email,
+        locationType: locationMode,
+        partnerLocationId: locationMode === 'shop' ? selectedPartner?.id : undefined,
+        preferredDate: selectedDate.trim(),
+        preferredTimeWindow: selectedTime,
+        customerNotes: notes.trim() || undefined,
+        preferredMechanicId: preferredMechanicId || undefined,
+        ...applyReferralCodeOnBooking(referralInput),
       });
 
       const init = await initPaymentSheet({
@@ -174,7 +230,11 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
                 <Text style={styles.serviceTitle}>{s.title}</Text>
               </View>
               <Text style={styles.servicePrice}>
-                {s.directBook ? `$${s.price}` : '$100'}
+                {s.directBook
+                  ? `$${s.price}`
+                  : s.typicalMinDollars != null && s.typicalMaxDollars != null
+                    ? `$${s.typicalMinDollars}–$${s.typicalMaxDollars}`
+                    : '$100 hold'}
               </Text>
             </View>
 
@@ -196,27 +256,94 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       {/* Step 3: Dispatch Address & Slot */}
       <Text style={styles.sectionHeader}>3. DISPATCH LOCATION & TIME</Text>
       <View style={styles.formCard}>
-        <Text style={styles.inputLabel}>Mobile Dispatch Address</Text>
-        <TextInput
-          style={styles.input}
-          value={dispatchAddress}
-          onChangeText={setDispatchAddress}
-          placeholder="Enter Home / Office Address"
-          placeholderTextColor={colors.text.muted}
-        />
+        <Text style={styles.inputLabel}>Where should we service?</Text>
+        <View style={styles.slotsRow}>
+          <TouchableOpacity
+            style={[styles.slotBtn, locationMode === 'mobile' && styles.slotBtnSelected]}
+            onPress={() => setLocationMode('mobile')}
+          >
+            <Text style={[styles.slotText, locationMode === 'mobile' && styles.slotTextSelected]}>
+              Mobile
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.slotBtn, locationMode === 'shop' && styles.slotBtnSelected]}
+            onPress={() => setLocationMode('shop')}
+          >
+            <Text style={[styles.slotText, locationMode === 'shop' && styles.slotTextSelected]}>
+              Partner shop
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.inputLabel}>Preferred Date</Text>
+        {locationMode === 'shop' ? (
+          <>
+            <Text style={styles.inputLabel}>Book at partner shop</Text>
+            {partners.length === 0 ? (
+              <Text style={styles.serviceDescription}>No partner shops available yet — use mobile.</Text>
+            ) : (
+              partners.map((p) => {
+                const on = selectedPartnerId === p.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[styles.serviceCard, on && styles.serviceCardSelected, { marginBottom: 8 }]}
+                    onPress={() => setSelectedPartnerId(p.id)}
+                  >
+                    <Text style={styles.serviceTitle}>{p.businessName}</Text>
+                    <Text style={styles.serviceDescription}>
+                      {p.address}
+                      {p.city ? `, ${p.city}` : ''}
+                      {p.hasLift ? ' · Lift available' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={styles.inputLabel}>Mobile Dispatch Address</Text>
+            <TextInput
+              style={styles.input}
+              value={dispatchAddress}
+              onChangeText={setDispatchAddress}
+              placeholder="Enter Home / Office Address"
+              placeholderTextColor={colors.text.muted}
+            />
+          </>
+        )}
+
+        <Text style={styles.inputLabel}>Preferred Date (YYYY-MM-DD)</Text>
         <TextInput
           style={styles.input}
           value={selectedDate}
           onChangeText={setSelectedDate}
-          placeholder="e.g. Tomorrow, 10 AM"
+          placeholder={todayISODate()}
           placeholderTextColor={colors.text.muted}
+          autoCapitalize="none"
         />
 
-        <Text style={styles.inputLabel}>Select Time Slot</Text>
+        <Text style={styles.inputLabel}>Time window</Text>
         <View style={styles.slotsRow}>
-          {TIME_SLOTS.map(slot => {
+          {PREFERRED_TIME_WINDOWS.map(slot => {
+            const isSlotSelected = selectedTime === slot;
+            return (
+              <TouchableOpacity
+                key={slot}
+                style={[styles.slotBtn, isSlotSelected && styles.slotBtnSelected]}
+                onPress={() => setSelectedTime(slot)}
+              >
+                <Text style={[styles.slotText, isSlotSelected && styles.slotTextSelected]}>
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={[styles.inputLabel, { marginTop: 8 }]}>Or pick a clock slot</Text>
+        <View style={styles.slotsRow}>
+          {PREFERRED_TIME_SLOTS.map(slot => {
             const isSlotSelected = selectedTime === slot;
             return (
               <TouchableOpacity
@@ -241,6 +368,44 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
           placeholderTextColor={colors.text.muted}
           multiline
         />
+        <Text style={styles.inputLabel}>Referral code (optional)</Text>
+        <TextInput
+          style={styles.input}
+          value={referralInput}
+          onChangeText={(t) => setReferralInput(t.toUpperCase())}
+          placeholder="Friend's code"
+          placeholderTextColor={colors.text.muted}
+          autoCapitalize="characters"
+        />
+        {favorites.length > 0 && (
+          <>
+            <Text style={styles.inputLabel}>Preferred technician (optional)</Text>
+            <View style={styles.slotsRow}>
+              <TouchableOpacity
+                style={[styles.slotBtn, !preferredMechanicId && styles.slotBtnSelected]}
+                onPress={() => setPreferredMechanicId(null)}
+              >
+                <Text style={[styles.slotText, !preferredMechanicId && styles.slotTextSelected]}>
+                  Any tech
+                </Text>
+              </TouchableOpacity>
+              {favorites.map((f) => {
+                const on = preferredMechanicId === f.techId;
+                return (
+                  <TouchableOpacity
+                    key={f.techId}
+                    style={[styles.slotBtn, on && styles.slotBtnSelected]}
+                    onPress={() => setPreferredMechanicId(f.techId)}
+                  >
+                    <Text style={[styles.slotText, on && styles.slotTextSelected]}>
+                      {f.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
       </View>
 
       {/* Step 4: Quote Summary */}
@@ -250,7 +415,11 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
           <View key={s.id} style={styles.quoteRow}>
             <Text style={styles.quoteLabel}>{s.title}</Text>
             <Text style={styles.quoteVal}>
-              {quote.mode === 'direct' ? `$${s.price}` : s.directBook ? `$${s.price}*` : '$100'}
+              {quote.mode === 'direct'
+                ? `$${s.price}`
+                : s.typicalMinDollars != null && s.typicalMaxDollars != null
+                  ? `Typically $${s.typicalMinDollars}–$${s.typicalMaxDollars}`
+                  : '$100 hold'}
             </Text>
           </View>
         ))}

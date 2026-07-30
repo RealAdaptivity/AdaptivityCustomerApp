@@ -12,6 +12,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { colors } from './src/theme/colors';
 import { STRIPE_PUBLISHABLE_KEY } from './src/config/stripePublic';
 import { fetchMyVehicles, supabase, type VehicleRow } from './src/lib/supabase';
+import { registerDevicePushToken } from './src/lib/pushNotifications';
 
 type TabId = 'garage' | 'book' | 'track' | 'history' | 'settings';
 
@@ -47,6 +48,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('garage');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleForBooking, setSelectedVehicleForBooking] = useState<string | undefined>();
+  const [bookPrefillServices, setBookPrefillServices] = useState<string[] | undefined>();
+  const [bookPrefillVehicle, setBookPrefillVehicle] = useState<string | undefined>();
 
   const applyUser = useCallback((user: {
     id: string;
@@ -100,7 +103,10 @@ export default function App() {
   }, [applyUser]);
 
   useEffect(() => {
-    if (userId) void refreshVehicles(userId);
+    if (userId) {
+      void refreshVehicles(userId);
+      void registerDevicePushToken('customer');
+    }
   }, [userId, refreshVehicles]);
 
   const handleLogin = (_name: string, _email: string) => {
@@ -119,13 +125,32 @@ export default function App() {
 
   const handleBookForVehicle = (vehicle: Vehicle) => {
     setSelectedVehicleForBooking(vehicle.id);
+    setBookPrefillServices(undefined);
+    setBookPrefillVehicle(undefined);
     setActiveTab('book');
   };
 
-  const handleQuickBookRecommended = (title: string, cost: number) => {
+  const handleQuickBookRecommended = (
+    title: string,
+    cost: number,
+    opts?: { services?: string[]; vehicleName?: string }
+  ) => {
+    const services = opts?.services?.length ? opts.services : title ? [title] : undefined;
+    setBookPrefillServices(services);
+    setBookPrefillVehicle(opts?.vehicleName);
+    if (opts?.vehicleName) {
+      const match = vehicles.find(
+        (v) => `${v.year} ${v.make} ${v.model}`.toLowerCase() === opts.vehicleName!.toLowerCase()
+      );
+      setSelectedVehicleForBooking(match?.id);
+    } else {
+      setSelectedVehicleForBooking(undefined);
+    }
     Alert.alert(
-      'Service Added to Booking',
-      `Added "${title}" ($${cost}) to your quote request. Redirecting to appointment booking.`
+      'Ready to rebook',
+      cost > 0
+        ? `Prefilling "${title}" from your history. Confirm services and card hold on the Book tab.`
+        : 'Opening booking — pick services and confirm your card hold.'
     );
     setActiveTab('book');
   };
@@ -197,8 +222,11 @@ export default function App() {
           )}
           {activeTab === 'book' && (
             <BookServiceScreen
+              key={`${selectedVehicleForBooking || 'none'}-${(bookPrefillServices || []).join(',')}`}
               vehicles={vehicles}
               selectedVehicleId={selectedVehicleForBooking}
+              prefillServices={bookPrefillServices}
+              prefillVehicleName={bookPrefillVehicle}
               onBookingSuccess={() => setActiveTab('track')}
             />
           )}
@@ -227,7 +255,11 @@ export default function App() {
                 key={tab.id}
                 style={[styles.tabItem, isActive && styles.tabItemActive]}
                 onPress={() => {
-                  if (tab.id !== 'book') setSelectedVehicleForBooking(undefined);
+                  if (tab.id !== 'book') {
+                    setSelectedVehicleForBooking(undefined);
+                    setBookPrefillServices(undefined);
+                    setBookPrefillVehicle(undefined);
+                  }
                   setActiveTab(tab.id);
                 }}
                 activeOpacity={0.7}

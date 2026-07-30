@@ -43,7 +43,14 @@ export type CatalogService = {
   kind: ServiceKind;
   directBook: boolean;
   category: 'inspection' | 'maintenance' | 'brakes' | 'fluids' | 'audio' | 'appearance' | 'body' | 'modification' | 'detailing' | 'tires' | 'glass' | 'performance';
+  typicalMinDollars?: number;
+  typicalMaxDollars?: number;
 };
+
+export function formatCatalogPriceRange(s: Pick<CatalogService, 'typicalMinDollars' | 'typicalMaxDollars'>): string | null {
+  if (s.typicalMinDollars == null || s.typicalMaxDollars == null) return null;
+  return `Typically $${s.typicalMinDollars}–$${s.typicalMaxDollars}`;
+}
 
 export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
@@ -59,6 +66,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🔍",
     "kind": "diagnostic",
     "directBook": false,
+    "typicalMinDollars": 100,
+    "typicalMaxDollars": 100,
     "category": "inspection"
   },
   {
@@ -70,6 +79,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🛢️",
     "kind": "oil_change",
     "directBook": false,
+    "typicalMinDollars": 89,
+    "typicalMaxDollars": 160,
     "category": "maintenance"
   },
   {
@@ -81,6 +92,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🛑",
     "kind": "brakes",
     "directBook": false,
+    "typicalMinDollars": 280,
+    "typicalMaxDollars": 650,
     "category": "brakes"
   },
   {
@@ -92,6 +105,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "⚙️",
     "kind": "transmission_oil",
     "directBook": false,
+    "typicalMinDollars": 180,
+    "typicalMaxDollars": 350,
     "category": "fluids"
   },
   {
@@ -103,6 +118,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🔧",
     "kind": "differential",
     "directBook": false,
+    "typicalMinDollars": 140,
+    "typicalMaxDollars": 280,
     "category": "fluids"
   },
   {
@@ -114,6 +131,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🔋",
     "kind": "battery",
     "directBook": false,
+    "typicalMinDollars": 180,
+    "typicalMaxDollars": 420,
     "category": "maintenance"
   },
   {
@@ -125,6 +144,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "❄️",
     "kind": "ac_service",
     "directBook": false,
+    "typicalMinDollars": 150,
+    "typicalMaxDollars": 450,
     "category": "maintenance"
   },
   {
@@ -136,6 +157,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🛣️",
     "kind": "suspension",
     "directBook": false,
+    "typicalMinDollars": 250,
+    "typicalMaxDollars": 900,
     "category": "maintenance"
   },
   {
@@ -147,6 +170,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "💨",
     "kind": "exhaust_repair",
     "directBook": false,
+    "typicalMinDollars": 200,
+    "typicalMaxDollars": 800,
     "category": "maintenance"
   },
   {
@@ -158,6 +183,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🌡️",
     "kind": "cooling_system",
     "directBook": false,
+    "typicalMinDollars": 180,
+    "typicalMaxDollars": 700,
     "category": "maintenance"
   },
   {
@@ -169,6 +196,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🔗",
     "kind": "belts_hoses",
     "directBook": false,
+    "typicalMinDollars": 120,
+    "typicalMaxDollars": 350,
     "category": "maintenance"
   },
   {
@@ -180,6 +209,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "⚡",
     "kind": "ignition",
     "directBook": false,
+    "typicalMinDollars": 150,
+    "typicalMaxDollars": 480,
     "category": "maintenance"
   },
   {
@@ -191,6 +222,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "⛽",
     "kind": "fuel_system",
     "directBook": false,
+    "typicalMinDollars": 200,
+    "typicalMaxDollars": 650,
     "category": "maintenance"
   },
   {
@@ -202,6 +235,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🛞",
     "kind": "tires",
     "directBook": false,
+    "typicalMinDollars": 40,
+    "typicalMaxDollars": 200,
     "category": "tires"
   },
   {
@@ -213,6 +248,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "⭕",
     "kind": "wheel_service",
     "directBook": false,
+    "typicalMinDollars": 100,
+    "typicalMaxDollars": 350,
     "category": "tires"
   },
   {
@@ -224,6 +261,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🪟",
     "kind": "auto_glass",
     "directBook": false,
+    "typicalMinDollars": 80,
+    "typicalMaxDollars": 450,
     "category": "glass"
   },
   {
@@ -235,6 +274,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     "icon": "🔊",
     "kind": "car_audio",
     "directBook": false,
+    "typicalMinDollars": 200,
+    "typicalMaxDollars": 1500,
     "category": "audio"
   },
   {
@@ -386,7 +427,7 @@ export function getCatalogById(id: string): CatalogService | undefined {
   return SERVICE_CATALOG.find((s) => s.id === id);
 }
 
-function matchCatalogFromLabel(label: string): CatalogService | undefined {
+export function matchCatalogFromLabel(label: string): CatalogService | undefined {
   const t = label.toLowerCase();
   if (/\b(brake|brakes|pads|rotors)\b/.test(t)) return getCatalogById('brakes');
   if (/\b(transmission|trans)\b/.test(t) && /\b(oil|fluid)\b/.test(t)) {

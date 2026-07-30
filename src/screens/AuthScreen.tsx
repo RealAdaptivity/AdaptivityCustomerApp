@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, SafeAreaView,
-  StatusBar, KeyboardAvoidingView, Platform, StyleSheet, Alert, Modal, ScrollView,
+  StatusBar, KeyboardAvoidingView, Platform, StyleSheet, Alert, Modal, ScrollView, Image,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { signInCustomer, signUpCustomer, supabase } from '../lib/supabase';
@@ -88,9 +88,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Logo Header */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Text style={styles.logoEmoji}>🏎️</Text>
-            </View>
+            <Image source={require('../../assets/logo.png')} style={styles.logoIcon} />
             <Text style={styles.logoTitle}>
               ADAPTIVITY <Text style={styles.logoAccent}>PERFORMANCE</Text>
             </Text>
@@ -264,17 +262,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   logoIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.bg.card,
-    borderWidth: 2,
-    borderColor: colors.brand.orange,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 72,
+    height: 72,
     marginBottom: spacing.sm,
   },
-  logoEmoji: { fontSize: 24 },
   logoTitle: {
     fontSize: 20,
     fontWeight: '900',

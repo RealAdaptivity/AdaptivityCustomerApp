@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Alert, ActivityIndicator,
+  TextInput, Platform,
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { fetchMyBookings, supabase } from '../lib/supabase';
 import { shareReceipt } from '../lib/receiptPdf';
+import { openReceiptEmail } from '../lib/receiptEmail';
+import { addFavoriteTech, submitWarrantyClaim } from '../lib/customerExtras';
 
 interface ServiceHistoryItem {
   id: string;
@@ -17,10 +20,15 @@ interface ServiceHistoryItem {
   paymentStatus: string;
   customerName: string;
   address: string;
+  mechanicId: string | null;
 }
 
 interface HistoryScreenProps {
-  onQuickBookRecommended: (title: string, cost: number) => void;
+  onQuickBookRecommended: (
+    title: string,
+    cost: number,
+    opts?: { services?: string[]; vehicleName?: string }
+  ) => void;
 }
 
 function mapBooking(row: Record<string, unknown>): ServiceHistoryItem {
@@ -37,6 +45,7 @@ function mapBooking(row: Record<string, unknown>): ServiceHistoryItem {
     paymentStatus: (row.payment_status as string) || 'none',
     customerName: (row.customer_name as string) || 'Customer',
     address: (row.customer_address as string) || '',
+    mechanicId: (row.mechanic_id as string | null) ?? null,
   };
 }
 
@@ -45,6 +54,9 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onQuickBookRecomme
   const [selectedReceipt, setSelectedReceipt] = useState<ServiceHistoryItem | null>(null);
   const [items, setItems] = useState<ServiceHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [warrantyFor, setWarrantyFor] = useState<ServiceHistoryItem | null>(null);
+  const [warrantyDesc, setWarrantyDesc] = useState('');
+  const [warrantyBusy, setWarrantyBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,6 +95,80 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onQuickBookRecomme
       });
     } catch (e) {
       Alert.alert('Share failed', e instanceof Error ? e.message : 'Could not share receipt');
+    }
+  };
+
+  const handleEmailReceipt = async (item: ServiceHistoryItem) => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      await openReceiptEmail({
+        referenceCode: item.receiptId,
+        customerName: item.customerName,
+        vehicle: item.vehicleName,
+        services: item.services,
+        totalDollars: item.totalCost,
+        paymentStatus: item.paymentStatus,
+        dateLabel: item.date,
+        address: item.address,
+        toEmail: data.session?.user?.email || undefined,
+      });
+    } catch (e) {
+      Alert.alert('Email failed', e instanceof Error ? e.message : 'Could not open mail');
+    }
+  };
+
+  const openWarrantyPrompt = (item: ServiceHistoryItem) => {
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        'Warranty claim',
+        'Describe the issue with this completed job.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Submit',
+            onPress: (text?: string) => {
+              if (!text?.trim()) return;
+              void (async () => {
+                try {
+                  await submitWarrantyClaim(item.id, text);
+                  Alert.alert('Submitted', 'We received your warranty claim.');
+                } catch (e: unknown) {
+                  Alert.alert('Failed', e instanceof Error ? e.message : 'Could not submit');
+                }
+              })();
+            },
+          },
+        ],
+        'plain-text'
+      );
+      return;
+    }
+    setWarrantyDesc('');
+    setWarrantyFor(item);
+  };
+
+  const submitWarranty = async () => {
+    if (!warrantyFor) return;
+    setWarrantyBusy(true);
+    try {
+      await submitWarrantyClaim(warrantyFor.id, warrantyDesc);
+      setWarrantyFor(null);
+      setWarrantyDesc('');
+      Alert.alert('Submitted', 'We received your warranty claim.');
+    } catch (e: unknown) {
+      Alert.alert('Failed', e instanceof Error ? e.message : 'Could not submit');
+    } finally {
+      setWarrantyBusy(false);
+    }
+  };
+
+  const handleSaveTech = async (item: ServiceHistoryItem) => {
+    if (!item.mechanicId) return;
+    try {
+      await addFavoriteTech(item.mechanicId);
+      Alert.alert('Saved', 'Technician added to your favorites.');
+    } catch (e: unknown) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Unknown error');
     }
   };
 
@@ -138,6 +224,32 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onQuickBookRecomme
             <Text style={styles.historyServices} numberOfLines={2}>
               {item.services.join(' · ') || 'Service'}
             </Text>
+            <TouchableOpacity
+              style={styles.rebookBtn}
+              onPress={() =>
+                onQuickBookRecommended(item.services[0] || 'Mobile service', item.totalCost, {
+                  services: item.services,
+                  vehicleName: item.vehicleName,
+                })
+              }
+            >
+              <Text style={styles.rebookText}>Rebook →</Text>
+            </TouchableOpacity>
+            {item.status === 'COMPLETED' && (
+              <View style={styles.historyActions}>
+                {item.mechanicId ? (
+                  <TouchableOpacity onPress={() => void handleSaveTech(item)}>
+                    <Text style={styles.rebookText}>Save this tech</Text>
+                  </TouchableOpacity>
+                ) : null}
+                <TouchableOpacity onPress={() => openWarrantyPrompt(item)}>
+                  <Text style={styles.rebookText}>Warranty claim</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => void handleEmailReceipt(item)}>
+                  <Text style={styles.rebookText}>Email receipt</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ))
       ) : (
@@ -166,9 +278,44 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onQuickBookRecomme
                 <Text style={styles.pdfDownloadText}>📤 Share receipt</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={{ marginTop: 8 }}
+              onPress={() => void handleEmailReceipt(item)}
+            >
+              <Text style={styles.rebookText}>Email receipt</Text>
+            </TouchableOpacity>
           </View>
         ))
       )}
+
+      <Modal visible={!!warrantyFor} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.receiptNumber}>Warranty claim</Text>
+            <Text style={styles.receiptDate}>{warrantyFor?.receiptId}</Text>
+            <TextInput
+              style={styles.warrantyInput}
+              placeholder="Describe the issue…"
+              placeholderTextColor={colors.text.muted}
+              multiline
+              value={warrantyDesc}
+              onChangeText={setWarrantyDesc}
+            />
+            <TouchableOpacity
+              style={styles.modalPdfBtn}
+              disabled={warrantyBusy || !warrantyDesc.trim()}
+              onPress={() => void submitWarranty()}
+            >
+              <Text style={styles.modalPdfText}>
+                {warrantyBusy ? 'Submitting…' : 'Submit claim'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setWarrantyFor(null)}>
+              <Text style={styles.modalClose}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={!!selectedReceipt} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -244,6 +391,25 @@ const styles = StyleSheet.create({
   historyAmount: { fontSize: 14, fontWeight: '900', color: colors.status.success },
   historyMeta: { fontSize: 11, color: colors.text.muted, marginTop: 4 },
   historyServices: { fontSize: 12, color: colors.text.secondary, marginTop: 6 },
+  rebookBtn: { marginTop: 10, alignSelf: 'flex-start' },
+  rebookText: { fontSize: 12, fontWeight: '800', color: colors.brand.orange },
+  historyActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 10,
+  },
+  warrantyInput: {
+    marginTop: spacing.md,
+    minHeight: 90,
+    backgroundColor: colors.bg.input,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    padding: spacing.md,
+    color: colors.text.primary,
+    textAlignVertical: 'top',
+  },
   receiptCard: {
     backgroundColor: colors.bg.card,
     borderRadius: borderRadius.md,

@@ -31,9 +31,19 @@ export async function createBookingWithCardHold(input: {
   services: string[];
   holdAmountDollars: number;
   customerEmail?: string;
+  locationType?: 'mobile' | 'shop';
+  partnerLocationId?: string;
+  preferredDate?: string;
+  preferredTimeWindow?: string;
+  customerNotes?: string;
+  referralCode?: string;
+  preferredMechanicId?: string;
 }): Promise<BookingHoldResult> {
   const { data, error } = await supabase.functions.invoke('create-booking-with-hold', {
-    body: { ...input, locationType: 'mobile' },
+    body: {
+      ...input,
+      locationType: input.locationType || 'mobile',
+    },
   });
   if (error) throw new Error(await edgeErrorMessage(error, 'Failed to start booking'));
   if (data?.error) throw new Error(String(data.error));
