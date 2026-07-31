@@ -2,4 +2,4 @@
 export const GOOGLE_REVIEW_URL =
   (typeof process !== 'undefined' &&
     process.env.EXPO_PUBLIC_GOOGLE_REVIEW_URL?.trim()) ||
-  'https://www.google.com/search?q=Adaptivity+Performance+Justin+TX+reviews';
+  'https://g.page/r/CaIynDu9Qo0SEBM/review';
