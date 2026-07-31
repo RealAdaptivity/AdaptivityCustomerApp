@@ -1,3 +1,5 @@
+import 'react-native-url-polyfill/auto';
+import { AppState, type AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config/supabasePublic';
@@ -9,6 +11,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// Keep auth tokens fresh while the app is foregrounded (Supabase RN guidance).
+AppState.addEventListener('change', (state: AppStateStatus) => {
+  if (state === 'active') {
+    void supabase.auth.startAutoRefresh();
+  } else {
+    void supabase.auth.stopAutoRefresh();
+  }
 });
 
 export async function signInCustomer(email: string, password: string) {

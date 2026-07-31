@@ -105,7 +105,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.screenTitle}>⚙️ Customer Settings</Text>
+      <Text style={styles.screenTitle}>Customer Settings</Text>
       <Text style={styles.screenSubtitle}>
         Manage your profile, update email & password, and configure dispatch notifications.
       </Text>

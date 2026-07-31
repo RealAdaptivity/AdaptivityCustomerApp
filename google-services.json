@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "106115431470",
+    "project_id": "adaptivityperformance-fe728",
+    "storage_bucket": "adaptivityperformance-fe728.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:106115431470:android:e004edeafbabe2a06ff3bf",
+        "android_client_info": {
+          "package_name": "com.adaptivityperformance.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3n-vLVqirWD6CZu-7KDheYHRejP7A_ac"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

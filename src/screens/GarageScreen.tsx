@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { supabase, upsertVehicle } from '../lib/supabase';
 
@@ -119,7 +120,7 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
       {/* Header Banner */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.screenTitle}>🏎️ My Garage</Text>
+          <Text style={styles.screenTitle}>My Garage</Text>
           <Text style={styles.screenSubtitle}>
             {vehicles.length} vehicle{vehicles.length === 1 ? '' : 's'} registered for mobile dispatch
           </Text>
@@ -162,7 +163,7 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
                 onPress={() => handleRemoveVehicle(v.id, `${v.year} ${v.make} ${v.model}`)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.deleteIcon}>🗑️</Text>
+                <Ionicons name="trash-outline" size={18} color={colors.text.muted} />
               </TouchableOpacity>
             </View>
 
@@ -174,9 +175,17 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
                 isUrgent && styles.statusBadgeUrgent,
               ]}
             >
-              <Text style={styles.statusDot}>
-                {isUrgent ? '🔴' : isWarning ? '🟡' : '🟢'}
-              </Text>
+              <Ionicons
+                name={isUrgent ? 'alert-circle' : isWarning ? 'warning' : 'checkmark-circle'}
+                size={14}
+                color={
+                  isUrgent
+                    ? colors.status.error
+                    : isWarning
+                      ? colors.status.warning
+                      : colors.status.success
+                }
+              />
               <Text
                 style={[
                   styles.statusText,
@@ -313,7 +322,7 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({
                 disabled={saving}
               >
                 <Text style={styles.saveVehicleText}>
-                  {saving ? 'Saving…' : '🏎️ Save to Garage'}
+                  {saving ? 'Saving…' : 'Save to Garage'}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -359,7 +368,6 @@ const styles = StyleSheet.create({
   vehicleTitleBox: { flex: 1 },
   vehicleName: { fontSize: 18, fontWeight: '800', color: colors.text.primary },
   vehicleTrim: { fontSize: 12, color: colors.brand.orange, fontWeight: '700', marginTop: 2 },
-  deleteIcon: { fontSize: 16 },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -381,7 +389,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderColor: 'rgba(239, 68, 68, 0.3)',
   },
-  statusDot: { fontSize: 10 },
   statusText: { fontSize: 12, fontWeight: '700', color: colors.status.success },
   statusTextWarning: { color: colors.status.warning },
   statusTextUrgent: { color: colors.status.error },

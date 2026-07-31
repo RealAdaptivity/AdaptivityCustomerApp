@@ -44,7 +44,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         return;
       }
       const { data, error } = await signInCustomer(email.trim(), password);
-      if (error) throw error;
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid login credentials')) {
+          throw new Error(
+            'Email or password is incorrect. Create an account with Sign Up if you haven’t yet, or use Forgot Password.'
+          );
+        }
+        throw error;
+      }
       const nameToUse =
         data.user?.user_metadata?.full_name ||
         fullName.trim() ||

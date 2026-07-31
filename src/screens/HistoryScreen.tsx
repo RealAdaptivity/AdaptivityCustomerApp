@@ -174,7 +174,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onQuickBookRecomme
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.screenTitle}>📜 History & Receipts</Text>
+      <Text style={styles.screenTitle}>History & Receipts</Text>
       <Text style={styles.screenSubtitle}>
         Your real bookings from Adaptivity. Share a receipt anytime.
       </Text>

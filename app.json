@@ -16,9 +16,14 @@
       "icon": "./assets/icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.adaptivityperformance.customer",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "Adaptivity uses your camera to scan vehicle VIN stickers and document vehicle issues for quote requests.",
         "NSLocationWhenInUseUsageDescription": "Adaptivity uses your location to auto-fill your mobile service dispatch address.",
+        "UIBackgroundModes": ["fetch", "remote-notification"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -27,7 +32,8 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#090a0f"
       },
-      "package": "com.adaptivityperformance.customer"
+      "package": "com.adaptivityperformance.customer",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "eas": {
@@ -35,6 +41,7 @@
       }
     },
     "plugins": [
+      "expo-notifications",
       [
         "@stripe/stripe-react-native",
         {

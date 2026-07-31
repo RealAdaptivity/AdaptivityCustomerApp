@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Alert, ActivityIndicator,
+  View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Alert, ActivityIndicator, Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { GarageScreen, Vehicle } from './src/screens/GarageScreen';
@@ -15,13 +16,14 @@ import { fetchMyVehicles, supabase, type VehicleRow } from './src/lib/supabase';
 import { registerDevicePushToken } from './src/lib/pushNotifications';
 
 type TabId = 'garage' | 'book' | 'track' | 'history' | 'settings';
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'garage', label: 'Garage', icon: '🏎️' },
-  { id: 'book', label: 'Book Service', icon: '⚡' },
-  { id: 'track', label: 'Track', icon: '📍' },
-  { id: 'history', label: 'History', icon: '📜' },
-  { id: 'settings', label: 'Settings', icon: '⚙️' },
+const TABS: { id: TabId; label: string; icon: IoniconName; iconOutline: IoniconName }[] = [
+  { id: 'garage', label: 'Garage', icon: 'car-sport', iconOutline: 'car-sport-outline' },
+  { id: 'book', label: 'Book', icon: 'calendar', iconOutline: 'calendar-outline' },
+  { id: 'track', label: 'Track', icon: 'navigate', iconOutline: 'navigate-outline' },
+  { id: 'history', label: 'History', icon: 'time', iconOutline: 'time-outline' },
+  { id: 'settings', label: 'Settings', icon: 'settings', iconOutline: 'settings-outline' },
 ];
 
 function mapVehicleRow(row: VehicleRow): Vehicle {
@@ -188,7 +190,12 @@ export default function App() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.headerLogo}>
-              <Text style={styles.headerLogoEmoji}>🏎️</Text>
+              <Image
+                source={require('./assets/logo.png')}
+                style={styles.headerLogoImage}
+                resizeMode="contain"
+                accessibilityLabel="Adaptivity Performance"
+              />
             </View>
             <View>
               <View style={styles.headerTitleRow}>
@@ -264,7 +271,12 @@ export default function App() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.tabIcon}>{tab.icon}</Text>
+                <Ionicons
+                  name={isActive ? tab.icon : tab.iconOutline}
+                  size={22}
+                  color={isActive ? colors.brand.orange : colors.text.muted}
+                  style={styles.tabIcon}
+                />
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
                 {isActive && <View style={styles.tabIndicator} />}
               </TouchableOpacity>
@@ -305,12 +317,13 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     backgroundColor: colors.bg.primary,
-    borderWidth: 2,
-    borderColor: colors.brand.orange,
+    borderWidth: 1,
+    borderColor: colors.border.orange,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-  headerLogoEmoji: { fontSize: 16 },
+  headerLogoImage: { width: 28, height: 28 },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,9 +381,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tabItemActive: {},
-  tabIcon: { fontSize: 18, marginBottom: 2 },
+  tabIcon: { marginBottom: 3 },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
     color: colors.text.muted,
   },

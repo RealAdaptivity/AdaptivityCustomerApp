@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Modal, ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { Vehicle } from './GarageScreen';
@@ -183,7 +184,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <Text style={styles.screenTitle}>⚡ Instant Quote & Dispatch</Text>
+      <Text style={styles.screenTitle}>Instant Quote & Dispatch</Text>
       <Text style={styles.screenSubtitle}>
         Most visits start with a $100 diagnostic — then we recommend repairs. Oil, brakes,
         transmission fluid, and differential service book directly (no diagnostic fee).
@@ -201,7 +202,11 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
               onPress={() => setActiveVehicleId(v.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.vehicleChipEmoji}>🏎️</Text>
+              <Ionicons
+                name="car-sport-outline"
+                size={18}
+                color={isSelected ? colors.brand.orange : colors.text.muted}
+              />
               <View>
                 <Text style={[styles.vehicleChipTitle, isSelected && styles.vehicleChipTitleSelected]}>
                   {v.year} {v.make} {v.model}
@@ -535,7 +540,6 @@ const styles = StyleSheet.create({
     borderColor: colors.brand.orange,
     backgroundColor: colors.brand.orangeGlow,
   },
-  vehicleChipEmoji: { fontSize: 18 },
   vehicleChipTitle: { fontSize: 13, fontWeight: '700', color: colors.text.secondary },
   vehicleChipTitleSelected: { color: colors.text.primary },
   vehicleChipSub: { fontSize: 10, color: colors.text.muted },
