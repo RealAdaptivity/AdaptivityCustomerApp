@@ -18,7 +18,7 @@ export async function openReceiptEmail(data: ReceiptData & { toEmail?: string })
     `Total: $${data.totalDollars.toFixed(2)}`,
     '',
     'Thank you for choosing Adaptivity Performance.',
-    'Questions: (214) 620-3244',
+    'Questions: (940) 304-0620',
   ].filter(Boolean);
 
   const subject = encodeURIComponent(`Receipt ${data.referenceCode} — Adaptivity Performance`);

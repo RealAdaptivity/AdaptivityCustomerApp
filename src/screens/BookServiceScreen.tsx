@@ -131,7 +131,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
 
       const hold = await createBookingWithCardHold({
         customerName: userMeta?.full_name || 'Adaptivity Customer',
-        customerPhone: userMeta?.phone || '(214) 620-3244',
+        customerPhone: userMeta?.phone || '(940) 304-0620',
         customerAddress: address,
         zipCode: selectedPartner?.zipCode || '76247',
         vehicleDescription: activeVehicle
