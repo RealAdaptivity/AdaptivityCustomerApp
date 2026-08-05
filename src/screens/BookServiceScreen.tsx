@@ -107,6 +107,16 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       Alert.alert('Missing Address', 'Please provide a mobile dispatch address.');
       return;
     }
+    if (
+      locationMode === 'mobile' &&
+      (/^\d{1,6}\s*,\s*\d{5}/.test(dispatchAddress.trim()) || !/[A-Za-z]/.test(dispatchAddress))
+    ) {
+      Alert.alert(
+        'Incomplete address',
+        'Enter the full street address with street name and city (not just a house number and zip).'
+      );
+      return;
+    }
     if (locationMode === 'shop' && !selectedPartner) {
       Alert.alert('Pick a shop', 'Select a partner shop or switch to mobile dispatch.');
       return;
@@ -313,7 +323,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
               style={styles.input}
               value={dispatchAddress}
               onChangeText={setDispatchAddress}
-              placeholder="Enter Home / Office Address"
+              placeholder="e.g. 1234 Canyon Falls Dr, Northlake TX 76226"
               placeholderTextColor={colors.text.muted}
             />
           </>
