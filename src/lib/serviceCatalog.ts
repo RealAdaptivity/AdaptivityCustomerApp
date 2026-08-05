@@ -54,20 +54,20 @@ export function formatCatalogPriceRange(s: Pick<CatalogService, 'typicalMinDolla
 
 export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
-export const DIAGNOSTIC_HOLD_DOLLARS = 100;
+export const DIAGNOSTIC_HOLD_DOLLARS = 85;
 
 export const SERVICE_CATALOG: CatalogService[] = [
   {
     "id": "diagnostic",
     "title": "Mobile Diagnostic Visit",
-    "description": "$100 diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.",
-    "price": 100,
+    "description": "$85 diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.",
+    "price": 85,
     "duration": "45–60 mins",
     "icon": "🔍",
     "kind": "diagnostic",
     "directBook": false,
-    "typicalMinDollars": 100,
-    "typicalMaxDollars": 100,
+    "typicalMinDollars": 85,
+    "typicalMaxDollars": 85,
     "category": "inspection"
   },
   {
@@ -497,5 +497,3 @@ export function matchCatalogFromLabel(label: string): CatalogService | undefined
   }
   return undefined;
 }
-
-

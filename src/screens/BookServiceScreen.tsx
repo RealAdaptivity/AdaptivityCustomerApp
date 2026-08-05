@@ -186,7 +186,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
       {/* Header */}
       <Text style={styles.screenTitle}>Instant Quote & Dispatch</Text>
       <Text style={styles.screenSubtitle}>
-        Most visits start with a $100 diagnostic — then we recommend repairs. Oil, brakes,
+        Most visits start with an $85 diagnostic hold — then we recommend repairs. Oil, brakes,
         transmission fluid, and differential service book directly (no diagnostic fee).
       </Text>
 
@@ -239,7 +239,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
                   ? `$${s.price}`
                   : s.typicalMinDollars != null && s.typicalMaxDollars != null
                     ? `$${s.typicalMinDollars}–$${s.typicalMaxDollars}`
-                    : '$100 hold'}
+                    : '$85 hold'}
               </Text>
             </View>
 
@@ -424,7 +424,7 @@ export const BookServiceScreen: React.FC<BookServiceScreenProps> = ({
                 ? `$${s.price}`
                 : s.typicalMinDollars != null && s.typicalMaxDollars != null
                   ? `Typically $${s.typicalMinDollars}–$${s.typicalMaxDollars}`
-                  : '$100 hold'}
+                  : '$85 hold'}
             </Text>
           </View>
         ))}
