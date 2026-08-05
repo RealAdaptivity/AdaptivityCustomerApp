@@ -562,7 +562,7 @@ export const TrackJobScreen: React.FC = () => {
             <Text style={styles.diag}>Payment captured. Thanks!</Text>
           )}
           {booking.quoteStatus === 'quote_declined' && (
-            <Text style={styles.lineMuted}>Diagnostic visit only — $100 applied.</Text>
+            <Text style={styles.lineMuted}>Diagnostic visit only — booking hold applied.</Text>
           )}
 
           {(canAddBeforePhoto || photos.length > 0) && (

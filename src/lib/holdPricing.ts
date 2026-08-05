@@ -21,7 +21,7 @@ export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {
     return {
       holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
       mode: 'diagnostic',
-      explanation: 'Mobile diagnostic visit — $100. We recommend repairs after inspection.',
+      explanation: `Mobile diagnostic visit — $${DIAGNOSTIC_HOLD_DOLLARS}. We recommend repairs after inspection.`,
       services: [],
       catalogSubtotal: 0,
     };
@@ -46,8 +46,8 @@ export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {
     holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
     mode: 'diagnostic',
     explanation: consultFirst
-      ? 'Starts with a $100 on-site diagnostic / consult. Your specialist quotes the full job before any repair or install charge.'
-      : 'Starts with a $100 diagnostic fee. After inspection we recommend what needs to be done.',
+      ? `Starts with a $${DIAGNOSTIC_HOLD_DOLLARS} on-site diagnostic / consult. Your specialist quotes the full job before any repair or install charge.`
+      : `Starts with a $${DIAGNOSTIC_HOLD_DOLLARS} diagnostic fee. After inspection we recommend what needs to be done.`,
     services,
     catalogSubtotal: DIAGNOSTIC_HOLD_DOLLARS,
   };

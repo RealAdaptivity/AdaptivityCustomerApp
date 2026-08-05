@@ -1,6 +1,6 @@
 # Adaptivity Customer Portal (Expo)
 
-Native customer app for booking ($100 diagnostic hold), garage, job tracking, and receipts. Final repair price is set by the tech on site.
+Native customer app for booking with an $85 diagnostic hold, garage, job tracking, and receipts. Final repair price is set by the tech on site.
 
 ## Stack
 
